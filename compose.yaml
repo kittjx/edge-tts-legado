@@ -5,14 +5,11 @@ services:
     container_name: edge-tts-legado
     restart: unless-stopped
     ports:
-      # 宿主机端口:容器端口。改宿主机端口用 HOST_PORT，容器内固定 3000
       - "${HOST_PORT:-3000}:${HOST_PORT:-3000}"
     environment:
       PORT: "${HOST_PORT:-3000}"
       HOST: "0.0.0.0"
-      # 同时向微软发起的合成请求数，被限流/断连时调小
       CONCURRENCY: "${CONCURRENCY:-2}"
-      # 访问令牌，留空表示不鉴权；公网部署务必设置
       TOKEN: "${TOKEN:-}"
     read_only: true
     cap_drop:
