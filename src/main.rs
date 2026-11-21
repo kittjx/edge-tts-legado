@@ -37,6 +37,8 @@ struct AppState {
     token: Option<Arc<str>>,
     /// 同时向微软发起的合成请求数上限，避免被限流
     limit: Arc<Semaphore>,
+    /// 为 true 时每个成功请求也打印日志（环境变量 VERBOSE=1）
+    verbose: bool,
 }
 
 #[derive(Deserialize, Default)]
@@ -204,7 +206,9 @@ async fn tts(
 
     match result {
         Ok(Ok(audio)) if !audio.is_empty() => {
-            println!("ok   {ms}ms chars={total_chars} chunks={n_chunks} bytes={} \"{preview}\"", audio.len());
+            if state.verbose {
+                println!("ok   {ms}ms chars={total_chars} chunks={n_chunks} bytes={} \"{preview}\"", audio.len());
+            }
             ([(header::CONTENT_TYPE, content_type)], audio).into_response()
         }
         Ok(Ok(_)) => {
@@ -248,7 +252,12 @@ async fn main() {
         .filter(|&n| n > 0)
         .unwrap_or(2);
     println!("max concurrent synth requests: {concurrency}");
+    let verbose = matches!(
+        std::env::var("VERBOSE").as_deref(),
+        Ok("1") | Ok("true") | Ok("TRUE") | Ok("yes")
+    );
     let state = AppState {
+        verbose,
         token,
         limit: Arc::new(Semaphore::new(concurrency)),
     };
